@@ -1079,6 +1079,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.fee_e.editingFinished.connect(self.update_fee)
         self.connect_fields(self, self.amount_e, self.fiat_send_e, self.fee_e)
 
+        self.fiat_fee_e = AmountEdit(self.fx.get_currency if self.fx else '')
+        self.fiat_fee_e.setFrozen(True)
+        if not self.fx or not self.fx.is_enabled():
+            self.fiat_fee_e.setVisible(False)
+        self.connect_fields(self, self.fee_e, self.fiat_fee_e, self.fee_e)
+
         self.rbf_checkbox = QCheckBox(_('Replaceable'))
         msg = [_('If you check this box, your transaction will be marked as non-final,'),
                _('and you will have the possiblity, while it is unconfirmed, to replace it with a transaction that pays a higher fee.'),
@@ -1089,7 +1095,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         grid.addWidget(self.fee_e_label, 5, 0)
         grid.addWidget(self.fee_slider, 5, 1)
         grid.addWidget(self.fee_e, 5, 2)
-        grid.addWidget(self.rbf_checkbox, 5, 3)
+        grid.addWidget(self.fiat_fee_e, 5, 3)
+        grid.addWidget(self.rbf_checkbox, 5, 4)
 
         self.preview_button = EnterButton(_("Preview"), self.do_preview)
         self.preview_button.setToolTip(_('Display the details of your transactions before signing it.'))
@@ -1105,6 +1112,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.amount_e.shortcut.connect(self.spend_max)
         self.payto_e.textChanged.connect(self.update_fee)
         self.amount_e.textEdited.connect(self.update_fee)
+        self.fiat_fee_e.textChanged.connect(self.update_fee)
 
         def reset_max(t):
             self.is_max = False
@@ -1553,7 +1561,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.not_enough_funds = False
         self.payment_request = None
         self.payto_e.is_pr = False
-        for e in [self.payto_e, self.message_e, self.amount_e, self.fiat_send_e, self.fee_e]:
+        for e in [self.payto_e, self.message_e, self.amount_e, self.fiat_send_e, self.fiat_fee_e, self.fee_e]:
             e.setText('')
             e.setFrozen(False)
         self.set_pay_from([])
@@ -2419,6 +2427,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def update_fiat(self):
         b = self.fx and self.fx.is_enabled()
         self.fiat_send_e.setVisible(b)
+        self.fiat_fee_e.setVisible(b)
         self.fiat_receive_e.setVisible(b)
         self.history_list.refresh_headers()
         self.history_list.update()
